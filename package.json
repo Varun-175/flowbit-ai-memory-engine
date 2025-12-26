@@ -4,6 +4,7 @@
   "description": "Memory-driven AI agent layer for invoice processing with learned corrections",
   "main": "dist/index.js",
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "demo": "ts-node -P tsconfig.json src/demo/demo-runner.ts",
