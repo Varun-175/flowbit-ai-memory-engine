@@ -20,7 +20,8 @@ export interface InvoiceFields {
   taxTotal: number;
   grossTotal: number;
   lineItems: LineItem[];
-  // Optional: will appear after normalization for Freight Co
+
+  // Will appear after normalization for Freight Co
   discountTerms?: string | null;
 }
 
@@ -39,7 +40,13 @@ export interface Invoice {
 export type HumanFinalDecision = "approved" | "rejected";
 
 export interface HumanCorrection {
-  field: string; // supports paths like "lineItems[0].sku"
+  /**
+   * Supports nested paths like:
+   * - "serviceDate"
+   * - "poNumber"
+   * - "lineItems[0].sku"
+   */
+  field: string;
   from: unknown;
   to: unknown;
   reason: string;
@@ -56,39 +63,72 @@ export interface HumanCorrectionLog {
    MEMORY TYPES
 ========================= */
 
+export type MemoryType = "VENDOR" | "CORRECTION";
+
 export interface BaseMemory {
   id?: number;
-  confidence: number;       // [0, 1]
+
+  confidence: number; // [0, 1]
   usageCount: number;
-  reinforcedCount: number;  // approvals
-  rejectedCount: number;    // rejections
-  lastUsedAt?: string;      // ISO string
-  createdAt?: string;       // ISO string
-  updatedAt?: string;       // ISO string
+  reinforcedCount: number; // approvals
+  rejectedCount: number; // rejections
+
+  lastUsedAt?: string; // ISO string
+  createdAt?: string; // ISO string
+  updatedAt?: string; // ISO string
 }
 
 export interface VendorMemory extends BaseMemory {
   vendor: string;
-  sourceKey: string;    // e.g. "Leistungsdatum"
-  targetField: string;  // e.g. "serviceDate"
+  sourceKey: string; // e.g. "Leistungsdatum"
+  targetField: string; // e.g. "serviceDate"
 }
 
 export interface CorrectionMemory extends BaseMemory {
-  vendor?: string | null; // allow global or vendor-specific patterns
-  pattern: string;        // e.g. "VAT_INCLUDED"
-  resolution: string;     // e.g. "RECOMPUTE_TAX_FROM_GROSS"
+  vendor?: string | null; // global or vendor-specific
+  pattern: string; // e.g. "VAT_INCLUDED", "SKONTO", "FREIGHT_SKU"
+  resolution: string; // e.g. "RECOMPUTE_TAX_FROM_GROSS"
 }
-
-export type MemoryType = "VENDOR" | "CORRECTION";
 
 export interface ResolutionMemory {
   invoiceId: string;
   vendor: string;
   memoryType: MemoryType;
-  memoryRef?: string;       // optional pointer (e.g., pattern name or mapping key)
+
+  /**
+   * Optional pointer for explainability:
+   * - vendor: "Leistungsdatum->serviceDate"
+   * - correction: "VAT_INCLUDED"
+   */
+  memoryRef?: string;
+
   approved: boolean;
   confidenceDelta: number;
-  timestamp: string;        // ISO string
+  timestamp: string; // ISO string
+}
+
+/* =========================
+   DUPLICATE TYPES
+========================= */
+
+export interface DuplicateMatch {
+  vendor: string;
+  invoiceNumber: string;
+  invoiceId?: string;
+  reason: string; // e.g. "same vendor+invoiceNumber"
+}
+
+/* =========================
+   RECALL RESULT TYPE
+========================= */
+
+export interface MemoryContext {
+  vendorMappings: VendorMemory[];
+  applicableCorrections: CorrectionMemory[];
+  isDuplicate: boolean;
+
+  // Optional: for better reasoning in output
+  duplicateMatch?: DuplicateMatch;
 }
 
 /* =========================
@@ -101,6 +141,12 @@ export interface AuditEntry {
   step: AuditStep;
   timestamp: string; // ISO string
   details: string;
+
+  /**
+   * Optional structured debug info (still contract-safe)
+   * because JSON output contract only requires step/timestamp/details.
+   */
+  meta?: Record<string, unknown>;
 }
 
 export type DecisionType = "AUTO_ACCEPT" | "AUTO_CORRECT" | "ESCALATE";
@@ -115,13 +161,24 @@ export type CorrectionSource =
   | "heuristic"
   | "duplicate_guard";
 
+/**
+ * Strongly-typed correction that keeps traceability.
+ * IMPORTANT: memoryId + memoryType lets Decide/Learn reliably reinforce the right memory.
+ */
 export interface ProposedCorrection {
   field: string; // supports nested paths
   from: unknown;
   to: unknown;
+
   confidence: number; // [0, 1]
   source: CorrectionSource;
   reason: string;
+
+  // Traceability (this is the big improvise)
+  vendor?: string; // usually invoice.vendor
+  memoryType?: MemoryType;
+  memoryId?: number; // vendor_memory.id or correction_memory.id
+  memoryRef?: string; // e.g. "Leistungsdatum->serviceDate" or "VAT_INCLUDED"
 }
 
 /* =========================
