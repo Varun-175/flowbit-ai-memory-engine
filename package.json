@@ -7,7 +7,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "demo": "ts-node -P tsconfig.json src/demo/demo-runner.ts",
+    "demo": "ts-node -P tsconfig.json demo-runner.ts",
     "clean": "rm -rf dist"
   },
   "author": "Varun A K",
