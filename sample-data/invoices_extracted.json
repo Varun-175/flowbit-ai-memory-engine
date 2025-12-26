@@ -1,0 +1,256 @@
+[
+  {
+    "invoiceId": "INV-A-001",
+    "vendor": "Supplier GmbH",
+    "fields": {
+      "invoiceNumber": "INV-2024-001",
+      "invoiceDate": "12.01.2024",
+      "serviceDate": null,
+      "currency": "EUR",
+      "poNumber": "PO-A-050",
+      "netTotal": 2500.0,
+      "taxRate": 0.19,
+      "taxTotal": 475.0,
+      "grossTotal": 2975.0,
+      "lineItems": [
+        {
+          "sku": "WIDGET-001",
+          "description": "Widget",
+          "qty": 100,
+          "unitPrice": 25.0
+        }
+      ]
+    },
+    "confidence": 0.78,
+    "rawText": "Rechnungsnr: INV-2024-001\nLeistungsdatum: 01.01.2024\nBestellnr: PO-A-050\nArtikel: WIDGET-001\nMenge: 100\nEinzelpreis: 25.00 EUR\nNetto: 2500.00 EUR\nMwSt (19%): 475.00 EUR\nBrutto: 2975.00 EUR"
+  },
+  {
+    "invoiceId": "INV-A-002",
+    "vendor": "Supplier GmbH",
+    "fields": {
+      "invoiceNumber": "INV-2024-002",
+      "invoiceDate": "18.01.2024",
+      "serviceDate": null,
+      "currency": "EUR",
+      "poNumber": "PO-A-050",
+      "netTotal": 2375.0,
+      "taxRate": 0.19,
+      "taxTotal": 451.25,
+      "grossTotal": 2826.25,
+      "lineItems": [
+        {
+          "sku": "WIDGET-001",
+          "description": "Widget",
+          "qty": 95,
+          "unitPrice": 25.0
+        }
+      ]
+    },
+    "confidence": 0.72,
+    "rawText": "Rechnungsnr: INV-2024-002\nLeistungsdatum: 15.01.2024\nBestellnr: PO-A-050\nHinweis: Teillieferung\nArtikel: WIDGET-001\nMenge: 95\nEinzelpreis: 25.00 EUR\nNetto: 2375.00 EUR\nMwSt (19%): 451.25 EUR\nBrutto: 2826.25 EUR"
+  },
+  {
+    "invoiceId": "INV-A-003",
+    "vendor": "Supplier GmbH",
+    "fields": {
+      "invoiceNumber": "INV-2024-003",
+      "invoiceDate": "25.01.2024",
+      "serviceDate": null,
+      "currency": "EUR",
+      "poNumber": null,
+      "netTotal": 500.0,
+      "taxRate": 0.19,
+      "taxTotal": 95.0,
+      "grossTotal": 595.0,
+      "lineItems": [
+        {
+          "sku": "WIDGET-002",
+          "description": "Widget Type 2",
+          "qty": 20,
+          "unitPrice": 25.0
+        }
+      ]
+    },
+    "confidence": 0.65,
+    "rawText": "Rechnungsnr: INV-2024-003\nLeistungsdatum: 20.01.2024\nArtikel: WIDGET-002\nMenge: 20\nEinzelpreis: 25.00 EUR\nNetto: 500.00 EUR\nMwSt (19%): 95.00 EUR\nBrutto: 595.00 EUR"
+  },
+  {
+    "invoiceId": "INV-B-001",
+    "vendor": "Parts AG",
+    "fields": {
+      "invoiceNumber": "PA-7781",
+      "invoiceDate": "05-02-2024",
+      "serviceDate": "2024-02-01",
+      "currency": "EUR",
+      "poNumber": "PO-B-110",
+      "netTotal": 2000.0,
+      "taxRate": 0.19,
+      "taxTotal": 400.0,
+      "grossTotal": 2400.0,
+      "lineItems": [
+        {
+          "sku": "BOLT-99",
+          "description": "Bolt Type 99",
+          "qty": 200,
+          "unitPrice": 10.0
+        }
+      ]
+    },
+    "confidence": 0.74,
+    "rawText": "Rechnung: PA-7781\nDatum: 05.02.2024\nBestellnr: PO-B-110\nArtikel: BOLT-99\nMenge: 200\nPreis: 10.00 EUR\nVAT already included in total\nNetto: 2000.00 EUR\nMwSt (19%): 400.00 EUR\nBrutto: 2400.00 EUR"
+  },
+  {
+    "invoiceId": "INV-B-002",
+    "vendor": "Parts AG",
+    "fields": {
+      "invoiceNumber": "PA-7799",
+      "invoiceDate": "20-02-2024",
+      "serviceDate": "2024-02-15",
+      "currency": "EUR",
+      "poNumber": "PO-B-110",
+      "netTotal": 1500.0,
+      "taxRate": 0.19,
+      "taxTotal": 285.0,
+      "grossTotal": 1785.0,
+      "lineItems": [
+        {
+          "sku": "BOLT-99",
+          "description": "Bolt Type 99",
+          "qty": 150,
+          "unitPrice": 10.0
+        }
+      ]
+    },
+    "confidence": 0.86,
+    "rawText": "Rechnung: PA-7799\nDatum: 20.02.2024\nBestellnr: PO-B-110\nArtikel: BOLT-99\nMenge: 150\nPreis: 10.00 EUR\nPrices incl. VAT\nNetto: 1500.00 EUR\nMwSt (19%): 285.00 EUR\nBrutto: 1785.00 EUR"
+  },
+  {
+    "invoiceId": "INV-B-003",
+    "vendor": "Parts AG",
+    "fields": {
+      "invoiceNumber": "PA-7810",
+      "invoiceDate": "01-03-2024",
+      "serviceDate": "2024-02-28",
+      "currency": null,
+      "poNumber": "PO-B-111",
+      "netTotal": 1000.0,
+      "taxRate": 0.19,
+      "taxTotal": 190.0,
+      "grossTotal": 1190.0,
+      "lineItems": [
+        {
+          "sku": "NUT-10",
+          "description": "Nut Type 10",
+          "qty": 500,
+          "unitPrice": 2.0
+        }
+      ]
+    },
+    "confidence": 0.68,
+    "rawText": "Rechnung: PA-7810\nDatum: 01.03.2024\nBestellnr: PO-B-111\nArtikel: NUT-10\nMenge: 500\nEinzelpreis: 2.00 EUR\nNetto: 1000.00 EUR\nMwSt (19%): 190.00 EUR\nBrutto: 1190.00 EUR\nWährung: EUR"
+  },
+  {
+    "invoiceId": "INV-C-001",
+    "vendor": "Freight & Co",
+    "fields": {
+      "invoiceNumber": "FC-1001",
+      "invoiceDate": "01.03.2024",
+      "serviceDate": "2024-02-28",
+      "currency": "EUR",
+      "poNumber": "PO-C-900",
+      "netTotal": 980.0,
+      "taxRate": 0.19,
+      "taxTotal": 186.2,
+      "grossTotal": 1166.2,
+      "lineItems": [
+        {
+          "sku": null,
+          "description": "Transport charges",
+          "qty": 1,
+          "unitPrice": 1000.0
+        }
+      ],
+      "discountTerms": null
+    },
+    "confidence": 0.79,
+    "rawText": "Invoice: FC-1001\nDate: 01.03.2024\nPO: PO-C-900\nDescription: Transport charges\nQty: 1\nPrice: 1000.00 EUR\n2% Skonto if paid within 10 days\nNetto: 980.00 EUR\nMwSt (19%): 186.20 EUR\nBrutto: 1166.20 EUR"
+  },
+  {
+    "invoiceId": "INV-C-002",
+    "vendor": "Freight & Co",
+    "fields": {
+      "invoiceNumber": "FC-1002",
+      "invoiceDate": "15.03.2024",
+      "serviceDate": "2024-03-10",
+      "currency": "EUR",
+      "poNumber": "PO-C-900",
+      "netTotal": 950.0,
+      "taxRate": 0.19,
+      "taxTotal": 180.5,
+      "grossTotal": 1130.5,
+      "lineItems": [
+        {
+          "sku": null,
+          "description": "Seefracht Hamburg → Rotterdam",
+          "qty": 1,
+          "unitPrice": 1000.0
+        }
+      ],
+      "discountTerms": null
+    },
+    "confidence": 0.72,
+    "rawText": "Invoice: FC-1002\nDate: 15.03.2024\nPO: PO-C-900\nDescription: Seefracht Hamburg → Rotterdam\nQty: 1\nPrice: 1000.00 EUR\nNote: 2% Skonto within 10 days\nNetto: 950.00 EUR\nMwSt (19%): 180.50 EUR\nBrutto: 1130.50 EUR"
+  },
+  {
+    "invoiceId": "INV-C-003",
+    "vendor": "Freight & Co",
+    "fields": {
+      "invoiceNumber": "FC-1003",
+      "invoiceDate": "20.03.2024",
+      "serviceDate": "2024-03-18",
+      "currency": "EUR",
+      "poNumber": "PO-C-900",
+      "netTotal": 1020.0,
+      "taxRate": 0.19,
+      "taxTotal": 193.8,
+      "grossTotal": 1213.8,
+      "lineItems": [
+        {
+          "sku": null,
+          "description": "Shipping services",
+          "qty": 1,
+          "unitPrice": 1020.0
+        }
+      ],
+      "discountTerms": null
+    },
+    "confidence": 0.75,
+    "rawText": "Invoice: FC-1003\nDate: 20.03.2024\nPO: PO-C-900\nNote: delivery in progress\nDescription: Shipping services\nQty: 1\nPrice: 1020.00 EUR\nNetto: 1020.00 EUR\nMwSt (19%): 193.80 EUR\nBrutto: 1213.80 EUR"
+  },
+  {
+    "invoiceId": "INV-C-004",
+    "vendor": "Freight & Co",
+    "fields": {
+      "invoiceNumber": "FC-1004",
+      "invoiceDate": "25.03.2024",
+      "serviceDate": "2024-03-22",
+      "currency": "EUR",
+      "poNumber": "PO-C-901",
+      "netTotal": 1020.0,
+      "taxRate": 0.19,
+      "taxTotal": 193.8,
+      "grossTotal": 1213.8,
+      "lineItems": [
+        {
+          "sku": null,
+          "description": "Transport charges",
+          "qty": 1,
+          "unitPrice": 1020.0
+        }
+      ],
+      "discountTerms": null
+    },
+    "confidence": 0.58,
+    "rawText": "Invoice: FC-1004\nPO: PO-C-901\nNote: delivery confirmation pending\nDescription: Transport charges\nQty: 1\nPrice: 1020.00 EUR\nNetto: 1020.00 EUR\nMwSt (19%): 193.80 EUR\nBrutto: 1213.80 EUR"
+  }
+]

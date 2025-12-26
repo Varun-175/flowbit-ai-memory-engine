@@ -1,13 +1,28 @@
-import { Invoice, MemoryContext, VendorMemory, CorrectionMemory, DuplicateMatch } from "../types";
+import {
+  Invoice,
+  MemoryContext,
+  VendorMemory,
+  CorrectionMemory,
+  DuplicateMatch,
+} from "../types";
 import * as vendorMemSvc from "../memory/vendorMemory";
 import * as correctionMemSvc from "../memory/correctionMemory";
 import * as duplicateGuard from "../memory/duplicateGuard";
 
+/**
+ * RECALL PHASE
+ * - Retrieves ALL potentially relevant memory
+ * - Does NOT aggressively filter
+ * - Keeps learning robust and future-proof
+ */
 export async function recall(invoice: Invoice): Promise<MemoryContext> {
   try {
-    const raw = invoice.rawText.toLowerCase();
+    const rawLower = invoice.rawText.toLowerCase();
 
-    // 1) Duplicate check
+    /* =====================================================
+       1) DUPLICATE GUARD (HARD SAFETY)
+       ===================================================== */
+
     const isDuplicate = await duplicateGuard.isDuplicateInvoice(
       invoice.vendor,
       invoice.fields.invoiceNumber
@@ -18,26 +33,43 @@ export async function recall(invoice: Invoice): Promise<MemoryContext> {
           vendor: invoice.vendor,
           invoiceNumber: invoice.fields.invoiceNumber,
           invoiceId: invoice.invoiceId,
-          reason: "Same vendor + invoiceNumber already seen",
+          reason: "Same vendor + invoiceNumber already processed",
         }
       : undefined;
 
-    // 2) Pull all vendor memories + corrections for vendor
-    const allVendorMappings = await vendorMemSvc.findVendorMappings(invoice.vendor);
-    const allCorrections = await correctionMemSvc.findVendorCorrections(invoice.vendor);
+    /* =====================================================
+       2) LOAD MEMORY (BROAD RETRIEVAL)
+       ===================================================== */
 
-    // 3) Filter to only relevant ones (reduces noise downstream)
-    const vendorMappings = allVendorMappings.filter((vm: VendorMemory) =>
-      isVendorMappingRelevant(vm, raw)
+    const vendorMappings = await vendorMemSvc.findVendorMappings(invoice.vendor);
+    const correctionMemories = await correctionMemSvc.findVendorCorrections(
+      invoice.vendor
     );
 
-    const applicableCorrections = allCorrections.filter((cm: CorrectionMemory) =>
-      isCorrectionRelevant(cm, raw)
-    );
+    /* =====================================================
+       3) LIGHTWEIGHT SCORING (OPTIONAL, NON-DESTRUCTIVE)
+       ===================================================== */
+
+    const scoredVendorMappings = vendorMappings.map((vm) => ({
+      ...vm,
+      relevanceScore: computeVendorRelevance(vm, rawLower),
+    }));
+
+    const scoredCorrections = correctionMemories.map((cm) => ({
+      ...cm,
+      relevanceScore: computeCorrectionRelevance(cm, rawLower),
+    }));
+
+    /* =====================================================
+       4) SORT (NOT FILTER!)
+       ===================================================== */
+
+    scoredVendorMappings.sort((a, b) => b.relevanceScore - a.relevanceScore);
+    scoredCorrections.sort((a, b) => b.relevanceScore - a.relevanceScore);
 
     return {
-      vendorMappings,
-      applicableCorrections,
+      vendorMappings: scoredVendorMappings,
+      applicableCorrections: scoredCorrections,
       isDuplicate,
       duplicateMatch,
     };
@@ -46,31 +78,59 @@ export async function recall(invoice: Invoice): Promise<MemoryContext> {
   }
 }
 
-/* -------------------------
-   Relevance Helpers
-------------------------- */
+/* =====================================================
+   RELEVANCE SCORING HELPERS
+   (Soft signals, never hard filters)
+   ===================================================== */
 
-export function isVendorMappingRelevant(mapping: VendorMemory, rawLower: string): boolean {
-  return rawLower.includes(mapping.sourceKey.toLowerCase());
+function computeVendorRelevance(
+  mapping: VendorMemory,
+  rawLower: string
+): number {
+  let score = 0;
+
+  if (rawLower.includes(mapping.sourceKey.toLowerCase())) {
+    score += 0.7;
+  }
+
+  // Confidence contributes softly
+  score += Math.min(mapping.confidence, 0.3);
+
+  return score;
 }
 
-export function isCorrectionRelevant(correction: CorrectionMemory, rawLower: string): boolean {
+function computeCorrectionRelevance(
+  correction: CorrectionMemory,
+  rawLower: string
+): number {
+  let score = 0;
+
   const keywords = getPatternKeywords(correction.pattern);
   for (const kw of keywords) {
-    if (rawLower.includes(kw)) return true;
+    if (rawLower.includes(kw)) {
+      score += 0.3;
+    }
   }
-  return false;
+
+  // Confidence & reinforcement help ordering
+  score += Math.min(correction.confidence, 0.2);
+  score += Math.min(correction.reinforcedCount * 0.05, 0.2);
+
+  return score;
 }
 
+/* =====================================================
+   PATTERN KEYWORDS (SHARED CONTRACT)
+   ===================================================== */
+
 function getPatternKeywords(pattern: string): string[] {
-  // Keep these aligned with your learn.ts inference + appendix expectations
   switch (pattern) {
     case "VAT_INCLUDED":
       return ["vat", "mwst", "inkl", "incl", "included", "prices incl"];
     case "SKONTO":
       return ["skonto", "discount", "within", "days"];
     case "FREIGHT_SKU":
-      return ["seefracht", "shipping", "transport"];
+      return ["seefracht", "shipping", "transport", "freight"];
     default:
       return [];
   }

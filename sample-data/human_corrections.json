@@ -1,0 +1,66 @@
+[
+  {
+    "invoiceId": "INV-A-001",
+    "vendor": "Supplier GmbH",
+    "corrections": [
+      {
+        "field": "serviceDate",
+        "from": null,
+        "to": "2024-01-01",
+        "reason": "Leistungsdatum found in rawText"
+      }
+    ],
+    "finalDecision": "approved"
+  },
+  {
+    "invoiceId": "INV-A-003",
+    "vendor": "Supplier GmbH",
+    "corrections": [
+      {
+        "field": "poNumber",
+        "from": null,
+        "to": "PO-A-051",
+        "reason": "Matching PO"
+      },
+      {
+        "field": "serviceDate",
+        "from": null,
+        "to": "2024-01-20",
+        "reason": "Leistungsdatum found"
+      }
+    ],
+    "finalDecision": "approved"
+  },
+  {
+    "invoiceId": "INV-B-001",
+    "vendor": "Parts AG",
+    "corrections": [
+      {
+        "field": "grossTotal",
+        "from": 2400.0,
+        "to": 2380.0,
+        "reason": "VAT already included"
+      },
+      {
+        "field": "taxTotal",
+        "from": 400.0,
+        "to": 380.0,
+        "reason": "Recalculated"
+      }
+    ],
+    "finalDecision": "approved"
+  },
+  {
+    "invoiceId": "INV-C-001",
+    "vendor": "Freight & Co",
+    "corrections": [
+      {
+        "field": "discountTerms",
+        "from": null,
+        "to": "2% Skonto within 10 days",
+        "reason": "Skonto terms found"
+      }
+    ],
+    "finalDecision": "approved"
+  }
+]
