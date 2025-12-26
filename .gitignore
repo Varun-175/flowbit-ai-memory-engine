@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.log
+
+# SQLite databases
+*.sqlite
+*.sqlite3
+src/data/
+data/

@@ -1,0 +1,22 @@
+{
+  "name": "flowbit-ai-memory-engine",
+  "version": "1.0.0",
+  "description": "Memory-driven AI agent layer for invoice processing with learned corrections",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "demo": "ts-node -P tsconfig.json src/demo/demo-runner.ts",
+    "clean": "rm -rf dist"
+  },
+  "author": "Varun A K",
+  "license": "MIT",
+  "dependencies": {
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
