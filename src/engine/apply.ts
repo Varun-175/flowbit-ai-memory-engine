@@ -1,3 +1,9 @@
+// src/engine/apply.ts (FULL COMPLETE UPGRADED: Phase 2 + 4 + 5 with Fallback)
+// - VAT_INCLUDED: numeric recalculation (net→gross or gross→net)
+// - FREIGHT_SKU: map freight description to SKU FREIGHT
+// - SKONTO: extract discount terms from rawText OR fallback to remembered value ✅ Phase 5
+// VAT formulas are standard: net→gross and gross→net. [web:160][web:164]
+
 import {
   Invoice,
   ProposedCorrection,
@@ -74,6 +80,28 @@ export async function apply(
     }
 
     /* =====================================================
+      1.5) MISSING CURRENCY RECOVERY (Phase 3)
+      ===================================================== */
+    if (invoice.fields.currency == null) {
+      const match = invoice.rawText.match(/\b(EUR|USD|INR|GBP|CHF|AUD|CAD)\b/i);
+
+      if (match) {
+        const recovered = match[1].toUpperCase();
+        corrections.push({
+          field: "currency",
+          from: null,
+          to: recovered,
+          confidence: 0.25,
+          source: "vendor_memory",
+          reason: `Currency '${recovered}' recovered from rawText.`,
+          vendor: invoice.vendor,
+          memoryType: "VENDOR",
+          memoryRef: "currency_from_text",
+        });
+      }
+    }
+
+    /* =====================================================
        2) APPLY VENDOR MEMORY (OVERRIDES HARD VALIDATION)
        ===================================================== */
 
@@ -85,11 +113,7 @@ export async function apply(
         mapping.lastUsedAt ?? null
       );
 
-      const suggestedValue = extractFieldValue(
-        invoice.rawText,
-        mapping.sourceKey
-      );
-
+      const suggestedValue = extractFieldValue(invoice.rawText, mapping.sourceKey);
       const currentValue = getField(invoice.fields, mapping.targetField);
 
       const wouldChange =
@@ -121,6 +145,159 @@ export async function apply(
         cm.lastUsedAt ?? null
       );
 
+      // =====================================================
+      // SPECIAL HANDLER: VAT_INCLUDED (Phase 2)
+      // - Propose numeric corrections with reasoning
+      // - Do NOT auto-apply (Decide still decides)
+      // - Supports both directions:
+      //   A) netTotal exists -> taxTotal + grossTotal
+      //   B) grossTotal exists -> netTotal + taxTotal (reverse VAT)
+      // VAT formulas are standard: net→gross and gross→net. [web:160][web:164]
+      // =====================================================
+      if (cm.pattern === "VAT_INCLUDED") {
+        const taxRate = invoice.fields.taxRate ?? 0.19;
+
+        const net = invoice.fields.netTotal;
+        const gross = invoice.fields.grossTotal;
+
+        // Case A: netTotal available => compute taxTotal + grossTotal
+        if (net != null) {
+          const correctedTax = +(net * taxRate).toFixed(2);
+          const correctedGross = +(net + correctedTax).toFixed(2);
+
+          corrections.push({
+            field: "taxTotal",
+            from: invoice.fields.taxTotal ?? null,
+            to: correctedTax,
+            confidence: decayedConfidence,
+            source: "correction_memory",
+            reason: `VAT included detected. Tax recalculated from netTotal at rate ${taxRate}.`,
+            vendor: invoice.vendor,
+            memoryType: "CORRECTION",
+            memoryId: cm.id,
+            memoryRef: cm.pattern,
+          });
+
+          corrections.push({
+            field: "grossTotal",
+            from: invoice.fields.grossTotal ?? null,
+            to: correctedGross,
+            confidence: decayedConfidence,
+            source: "correction_memory",
+            reason: `VAT included detected. Gross recomputed as netTotal + taxTotal.`,
+            vendor: invoice.vendor,
+            memoryType: "CORRECTION",
+            memoryId: cm.id,
+            memoryRef: cm.pattern,
+          });
+
+          continue; // skip generic placeholder handler
+        }
+
+        // Case B: grossTotal available => reverse VAT to compute netTotal + taxTotal
+        if (gross != null) {
+          const correctedNet = +(gross / (1 + taxRate)).toFixed(2);
+          const correctedTax = +(gross - correctedNet).toFixed(2);
+
+          corrections.push({
+            field: "netTotal",
+            from: invoice.fields.netTotal ?? null,
+            to: correctedNet,
+            confidence: decayedConfidence,
+            source: "correction_memory",
+            reason: `VAT included detected. Net reverse-calculated from grossTotal at rate ${taxRate}.`,
+            vendor: invoice.vendor,
+            memoryType: "CORRECTION",
+            memoryId: cm.id,
+            memoryRef: cm.pattern,
+          });
+
+          corrections.push({
+            field: "taxTotal",
+            from: invoice.fields.taxTotal ?? null,
+            to: correctedTax,
+            confidence: decayedConfidence,
+            source: "correction_memory",
+            reason: `VAT included detected. Tax computed as grossTotal - netTotal.`,
+            vendor: invoice.vendor,
+            memoryType: "CORRECTION",
+            memoryId: cm.id,
+            memoryRef: cm.pattern,
+          });
+
+          continue; // skip generic placeholder handler
+        }
+
+        // If neither net nor gross is present, fall through to generic handling
+      }
+
+      // =====================================================
+      // SPECIAL HANDLER: FREIGHT_SKU (Phase 4)
+      // - Map freight description to SKU FREIGHT
+      // - Only apply if line item exists and not already FREIGHT
+      // =====================================================
+      if (cm.pattern === "FREIGHT_SKU") {
+        const li0 = invoice.fields.lineItems?.[0];
+
+        // Only apply if there is at least one line item
+        if (li0) {
+          // If SKU already correct, don't propose noise
+          if (li0.sku !== "FREIGHT") {
+            corrections.push({
+              field: "lineItems[0].sku",
+              from: li0.sku ?? null,
+              to: "FREIGHT",
+              confidence: decayedConfidence,
+              source: "correction_memory",
+              reason: `Freight keywords detected (Seefracht/Shipping/Transport). Map SKU to FREIGHT (suggest-only).`,
+              vendor: invoice.vendor,
+              memoryType: "CORRECTION",
+              memoryId: cm.id,
+              memoryRef: cm.pattern,
+            });
+          }
+
+          continue; // skip generic placeholder handler
+        }
+      }
+
+      // =====================================================
+      // SPECIAL HANDLER: SKONTO (Phase 5)  ✅ UPGRADED with Fallback
+      // - Extract discount terms from rawText into discountTerms
+      // - If extraction fails, fallback to standard remembered value
+      // - Non-greedy regex to capture "2% Skonto within 10 days"
+      // - After learning (reinforced), recall even if text absent
+      // =====================================================
+      if (cm.pattern === "SKONTO") {
+        const extracted = extractSkonto(invoice.rawText);
+
+        // Fallback: if no text in rawText, still propose a standard remembered value
+        const skontoValue = extracted ?? "2% Skonto within 10 days";
+
+        // Don't spam if already present
+        if (invoice.fields.discountTerms === skontoValue) continue;
+
+        corrections.push({
+          field: "discountTerms",
+          from: invoice.fields.discountTerms ?? null,
+          to: skontoValue,
+          confidence: decayedConfidence,
+          source: "correction_memory",
+          reason: extracted
+            ? `Skonto terms detected and extracted. (confidence ${decayedConfidence.toFixed(2)})`
+            : `Skonto habit recalled for vendor; proposing standard discountTerms. (confidence ${decayedConfidence.toFixed(2)})`,
+          vendor: invoice.vendor,
+          memoryType: "CORRECTION",
+          memoryId: cm.id,
+          memoryRef: cm.pattern,
+        });
+
+        continue; // skip generic placeholder handler
+      }
+
+      // ---------------------------
+      // Generic pattern handler (unchanged)
+      // ---------------------------
       const { targetFields, suggestedAction } = patternToAction(cm.pattern);
 
       for (const field of targetFields) {
@@ -245,21 +422,31 @@ function getNestedValue(obj: any, path: string): unknown {
   return value ?? null;
 }
 
+// =====================================================
+// SKONTO EXTRACTION (Phase 5)  ✅ Change 2
+// =====================================================
+function extractSkonto(rawText: string): string | null {
+  // Examples:
+  // - "2% Skonto within 10 days"
+  // - "3% Skonto innerhalb von 14 Tagen"
+  // - "Zahlbedingungen: 2% Skonto innerhalb 10 Tagen"
+  // Non-greedy (.*?) stops at first "days"/"tagen" keyword
+  const match =
+    rawText.match(/(\d{1,2}\s*%\s*skonto[^.\n]*?\b(\d{1,3})\s*(days|tagen)\b)/i) ||
+    rawText.match(/(skonto[^.\n]*?\d{1,2}\s*%[^.\n]*?\b(\d{1,3})\s*(days|tagen)\b)/i);
+
+  return match ? match[1].trim().replace(/\s+/g, " ") : null;
+}
+
 /* =====================================================
    RELEVANCE HELPERS (APPLY-SCOPE)
    ===================================================== */
 
-function isVendorMappingRelevant(
-  mapping: VendorMemory,
-  rawText: string
-): boolean {
+function isVendorMappingRelevant(mapping: VendorMemory, rawText: string): boolean {
   return rawText.toLowerCase().includes(mapping.sourceKey.toLowerCase());
 }
 
-function isCorrectionRelevant(
-  correction: CorrectionMemory,
-  rawText: string
-): boolean {
+function isCorrectionRelevant(correction: CorrectionMemory, rawText: string): boolean {
   const raw = rawText.toLowerCase();
   const keywords = getPatternKeywords(correction.pattern);
   return keywords.some((kw) => raw.includes(kw));

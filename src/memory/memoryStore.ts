@@ -1,3 +1,6 @@
+// =========================
+// memoryStore.ts (FULL)
+// =========================
 import sqlite3 from "sqlite3";
 import path from "path";
 
@@ -71,8 +74,8 @@ export function initDatabase(): void {
         invoiceId TEXT NOT NULL,
         vendor TEXT NOT NULL,
         memoryType TEXT NOT NULL,      -- 'VENDOR' | 'CORRECTION'
-        memoryRef TEXT,               -- optional pointer: e.g. "Leistungsdatum->serviceDate" or pattern key
-        approved INTEGER NOT NULL,     -- 1/0
+        memoryRef TEXT,                -- optional pointer: e.g. "Leistungsdatum->serviceDate" or pattern key
+        approved INTEGER NOT NULL,      -- 1/0
         confidenceDelta REAL NOT NULL DEFAULT 0.0,
         timestamp TEXT NOT NULL DEFAULT (datetime('now'))
       )
@@ -84,7 +87,7 @@ export function initDatabase(): void {
       CREATE TABLE IF NOT EXISTS audit_trail (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         invoiceId TEXT NOT NULL,
-        step TEXT NOT NULL,            -- recall|apply|decide|learn
+        step TEXT NOT NULL,             -- recall|apply|decide|learn
         timestamp TEXT NOT NULL DEFAULT (datetime('now')),
         details TEXT NOT NULL
       )
@@ -95,12 +98,12 @@ export function initDatabase(): void {
     run(`
       CREATE TABLE IF NOT EXISTS confidence_events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        memoryType TEXT NOT NULL,      -- 'VENDOR' | 'CORRECTION'
+        memoryType TEXT NOT NULL,       -- 'VENDOR' | 'CORRECTION'
         memoryId INTEGER NOT NULL,
         oldConfidence REAL,
         newConfidence REAL NOT NULL,
         delta REAL NOT NULL,
-        reason TEXT NOT NULL,          -- 'reinforce' | 'decay' | 'applied' | 'rejected'
+        reason TEXT NOT NULL,           -- 'reinforce' | 'decay' | 'applied' | 'rejected'
         timestamp TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `);
@@ -118,5 +121,17 @@ export function initDatabase(): void {
       )
     `);
     run(`CREATE INDEX IF NOT EXISTS idx_dupes_vendor_number ON duplicate_records(vendor, invoiceNumber);`);
+
+    // 7) Invoice seen: simple de-dupe gate by vendor + invoice_number
+    run(`
+      CREATE TABLE IF NOT EXISTS invoice_seen (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vendor TEXT NOT NULL,
+        invoice_number TEXT NOT NULL,
+        first_seen_at TEXT NOT NULL,
+        UNIQUE (vendor, invoice_number)
+      );
+    `);
+    run(`CREATE INDEX IF NOT EXISTS idx_invoice_seen_vendor_number ON invoice_seen(vendor, invoice_number);`);
   });
 }

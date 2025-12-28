@@ -21,9 +21,11 @@ export async function recall(invoice: Invoice): Promise<MemoryContext> {
 
     /* =====================================================
        1) DUPLICATE GUARD (HARD SAFETY)
+       - Use invoice_seen (vendor + invoice_number) as the true "already processed" gate,
+       - because it’s enforced via UNIQUE(vendor, invoice_number). [web:26]
        ===================================================== */
 
-    const isDuplicate = await duplicateGuard.isDuplicateInvoice(
+    const isDuplicate = await duplicateGuard.isDuplicateInvoiceSeen(
       invoice.vendor,
       invoice.fields.invoiceNumber
     );
@@ -83,10 +85,7 @@ export async function recall(invoice: Invoice): Promise<MemoryContext> {
    (Soft signals, never hard filters)
    ===================================================== */
 
-function computeVendorRelevance(
-  mapping: VendorMemory,
-  rawLower: string
-): number {
+function computeVendorRelevance(mapping: VendorMemory, rawLower: string): number {
   let score = 0;
 
   if (rawLower.includes(mapping.sourceKey.toLowerCase())) {
